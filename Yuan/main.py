@@ -1,5 +1,11 @@
 from __future__ import print_function
 import pexpect, math, time
+from IPython import embed
+import os
+import time
+import re
+from slackclient import SlackClient
+
 username = 'nasa2finalpj'
 password = 'nasa2017'
 unable = ['B1-B02-1', 'B1-B02-2']
@@ -7,10 +13,13 @@ keywords = ['215', 'core', 'Core', 'CORE', 'CSIE', 'csie', 'Csie']
 special = ['B1-B02-1', 'B1-B02-2', '215Core', 'CSIE-Private', 'wireless-OLD', 'wireless-NEW']
 threshold = 1.3
 history = dict()
+
 def average(lst):
 	return sum(lst)/len(lst)
+
 def standard_deviation(lst):
 	return math.sqrt(sum(map(lambda x: x*x, lst))/len(lst) - average(lst) ** 2)
+
 def print_report(id):
 	print('Report #' + str(id))
 	for key in sorted(history):
@@ -50,6 +59,7 @@ def analyze(context):
 				ret += numbers[1]
 				pre = False
 	return ret
+
 def analyze2(context):
 	pre = False
 	ret = dict()
@@ -99,10 +109,11 @@ def monitor(id, ssh_list):
 				msg = 'show int | inc Description|5 minute output'
 			ssh.sendline(msg)
 			output = ''
+			# embed()
 			while ssh.expect(['--More--', name + '#']) == 0:
-				output += ssh.before
+				output += ssh.before.decode('ascii')
 				ssh.send(' ')
-			output += ssh.before
+			output += ssh.before.decode('ascii')
 			if name != 'CSIE-Core':
 				output_rate = analyze(output)
 			else:
