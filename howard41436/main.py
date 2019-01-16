@@ -27,35 +27,36 @@ def standard_deviation(lst):
 	return math.sqrt(sum(map(lambda x: x*x, lst))/len(lst) - average(lst) ** 2)
 
 def print_report(id):
-	print('==============')
-	print('|Report #{:04}|'.format(id))
-	print('==============\n')
+	print('\n================')
+	print('| Report #{:04} |'.format(id))
+	print('================\n')
 	for key in sorted(history):
 		out_report = ""
 		if key.isdigit():
-			out_report += 'Floor {}:\n'.format(key)
-			# print('Floor ' + key + ':')
+			tmp = 'Floor {}:'.format(key)
 		elif key[0] != 'V':
-			# print('Cabinet ' + key + ':')
-			out_report += 'Cabinet {}:\n'.format(key)
+			tmp = 'Cabinet {}:'.format(key)
 		else:
-			# print(key + ':')
-			out_report += '{}:\n'.format(key)
+			tmp = '{}:'.format(key)
+		out_report += '{:=<66}\n'.format(tmp)
 		cur_rate, avg_rate = history[key][-1], average(history[key])
 		std_dev = standard_deviation(history[key])
-		# print('\tcurrent rate: ' + str(cur_rate))
-		# print('\taverage rate: ' + str(avg_rate))
-		# print('\tstandard deviation: ' +  str(std_dev))
-		out_report += '\tcurrent rate: {}\n'.format(cur_rate)
-		out_report += '\taverage rate: {}\n'.format(avg_rate)
-		out_report += '\tstandard deviation: {}\n'.format(std_dev)
+
+		tmp = '    current rate: {}'.format(cur_rate)
+		out_report += '|{: <32}'.format(tmp)
+
+		tmp = '    average rate: {}'.format(avg_rate)
+		out_report += '{: <32}|\n'.format(tmp)
+
+		tmp = '    std of rate: {:.2f}'.format(std_dev)
+		out_report += '|{: <32}'.format(tmp)
 
 		print(out_report, end='')
 		if len(history[key]) > 3 and cur_rate > max(2000, avg_rate + threshold * std_dev):
-			print('\tstatus: strange')
 			call_slack(out_report)
+			print("{: <32}|".format('    status: strange'))
 		else:
-			print('\tstatus: normal')
+			print("{: <32}|".format('    status: normal'))
 	return
 
 def analyze(context):
