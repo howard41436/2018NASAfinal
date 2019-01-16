@@ -2,6 +2,7 @@ from __future__ import print_function
 import pexpect
 import math
 import time
+import sys
 from slackclient import SlackClient
 
 SLACK_BOT_TOKEN='xoxb-o523368551824-524049843923-PPDJEdHMX5Ss3LXEUbvH08xk'
@@ -16,6 +17,7 @@ threshold = 1.3
 history = dict()
 
 def call_slack(bot_msg):
+	bot_msg = "**WARNING**\n" + bot_msg
 	slack_client.api_call("chat.postMessage", channel=CHANNEL, text=bot_msg)
 
 def average(lst):
@@ -25,24 +27,35 @@ def standard_deviation(lst):
 	return math.sqrt(sum(map(lambda x: x*x, lst))/len(lst) - average(lst) ** 2)
 
 def print_report(id):
-	print('Report #' + str(id))
+	print('==============')
+	print('|Report #{:04}|'.format(id))
+	print('==============\n')
 	for key in sorted(history):
+		out_report = ""
 		if key.isdigit():
-			print('Floor ' + key + ':')
+			out_report += 'Floor {}:\n'.format(key)
+			# print('Floor ' + key + ':')
 		elif key[0] != 'V':
-			print('Cabinet ' + key + ':')
+			# print('Cabinet ' + key + ':')
+			out_report += 'Cabinet {}:\n'.format(key)
 		else:
-			print(key + ':')
+			# print(key + ':')
+			out_report += '{}:\n'.format(key)
 		cur_rate, avg_rate = history[key][-1], average(history[key])
 		std_dev = standard_deviation(history[key])
-		print('\tcurrent rate: ' + str(cur_rate))
-		print('\taverage rate: ' + str(avg_rate))
-		print('\tstandard deviation: ' +  str(std_dev))
-		print('\tstatus: ', end = '')
+		# print('\tcurrent rate: ' + str(cur_rate))
+		# print('\taverage rate: ' + str(avg_rate))
+		# print('\tstandard deviation: ' +  str(std_dev))
+		out_report += '\tcurrent rate: {}\n'.format(cur_rate)
+		out_report += '\taverage rate: {}\n'.format(avg_rate)
+		out_report += '\tstandard deviation: {}\n'.format(std_dev)
+
+		print(out_report, end='')
 		if len(history[key]) > 3 and cur_rate > max(2000, avg_rate + threshold * std_dev):
-			print('strange')
+			print('\tstatus: strange')
+			call_slack(out_report)
 		else:
-			print('normal')
+			print('\tstatus: normal')
 	return
 
 def analyze(context):
@@ -138,9 +151,11 @@ def monitor(id, ssh_list):
 
 SSH = dict()
 with open('list.txt') as switchlist:
-	for line in switchlist:
-		ip, name = line.split(' ')
-		name = name[:-1]
+	print("Building Connection ...")
+	for c, line in enumerate(switchlist):
+		ip, name = line.split()
+		print("Connectng: {} ...    \r".format(name), end="")
+		sys.stdout.flush()
 		if name in special:
 			continue
 		ssh = pexpect.spawn('/usr/bin/ssh ' + username + '@' + ip)
@@ -153,6 +168,7 @@ with open('list.txt') as switchlist:
 			SSH[name] = None
 			continue
 		SSH[name] = ssh
+	print("Finish!                       ")
 
 slack_client = SlackClient(SLACK_BOT_TOKEN)
 if slack_client.rtm_connect(with_team_state=False):
